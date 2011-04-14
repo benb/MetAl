@@ -1,7 +1,7 @@
 import System.Environment (getArgs)
-import Alignment
-import Tree
-import Alignment.DistSet
+import Phylo.Alignment
+import Phylo.Tree
+import Phylo.Alignment.DistSet
 import Text.Printf
 import System.Console.GetOpt
 import Numeric

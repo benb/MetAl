@@ -1,8 +1,8 @@
 import System.Environment (getArgs,getProgName)
 import System.IO
-import Alignment
-import Tree
-import Alignment.Dist
+import Phylo.Alignment
+import Phylo.Tree
+import Phylo.Alignment.Dist
 import Text.Printf
 import System.Console.GetOpt
 import Numeric
