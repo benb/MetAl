@@ -68,7 +68,7 @@ labDistTrig numF aln1 aln2 = (i+j,j) where
 -- and returns a a tuple of (denonimator,numerator), i.e. distance is
 -- snd/fst
 labDist :: (SiteLabel a) => (ListAlignment -> [[(a)]]) -> ListAlignment -> ListAlignment -> (Int,Int)
-labDist numF aln1 aln2 | trace "Fast dist" False  = undefined
+--labDist numF aln1 aln2 | trace "Fast dist" False  = undefined
 labDist numF aln1 aln2 =  (i+j,j) where
                                 num1 = numF aln1
                                 num2 = numF aln2
