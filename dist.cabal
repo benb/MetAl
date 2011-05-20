@@ -11,10 +11,10 @@ Build-Type:     Simple
 --Executable homdist
 --        Main-Is: HomDist.hs
 --       HS-Source-Dirs: src
-Executable alndist
+Executable metal
         Main-Is: AlnDist.hs
         HS-Source-Dirs: src
-Executable alndistset
+Executable metalset
         Main-Is: AlnDistSet.hs
         HS-Source-Dirs: src
 library
