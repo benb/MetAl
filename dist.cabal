@@ -1,4 +1,4 @@
-Name:           MSAMetric
+Name:           MetAl
 Version:        0.1
 Cabal-Version:  >= 1.2
 License:        BSD3
@@ -11,7 +11,7 @@ Build-Type:     Simple
 --Executable homdist
 --        Main-Is: HomDist.hs
 --       HS-Source-Dirs: src
-Executable alndist
+Executable metal
         Main-Is: AlnDist.hs
         HS-Source-Dirs: src
 Executable alndistset
