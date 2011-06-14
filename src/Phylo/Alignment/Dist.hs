@@ -17,7 +17,7 @@ import Debug.Trace
 --                                             contained' full (x:[]) (y:ys) = x==y || contained full full ys
 --                                             contained' full (x:xs) (y:ys) = x==y || contained full xs (y:ys)
 --
-hom0Dist = labDistPerSeq diffIn numberifyBasic
+hom0Dist = labDistPerSeq diffSSP numberifyBasic
 --This is faster but less generic:
 --hom0Dist = zeroDist numberifyBasic
 homDist = labDistPerSeq diffIn numberifyBasic
