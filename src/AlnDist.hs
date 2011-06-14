@@ -51,7 +51,7 @@ seqwiseDistance first second out = case out of
                                   Right list -> putStrLn $ (unlines seqBySeq) ++ (show n) ++ " / " ++ (show d) ++ " = " ++ (show ((fromIntegral n)/(fromIntegral d))) 
                                                 where (d,n) = sumList list
                                                       seqNames = Phylo.Alignment.names first
-                                                      seqBySeq = map (\(nam,(i,j)) -> nam ++ " " ++ (show j) ++ " / " ++ (show i) ++ " = " ++ (show ((fromIntegral j)/(fromIntegral i)))) $ zip seqNames list
+                                                      seqBySeq = map (\(nam,(i,j)) -> nam ++ " " ++ (show j) ++ " / " ++ (show i) ++ " = " ++ (show ((fromIntegral j)/(fromIntegral i)))) $ zip seqNames (reverse list)
 
 
 
