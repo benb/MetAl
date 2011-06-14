@@ -17,12 +17,12 @@ import Debug.Trace
 --                                             contained' full (x:[]) (y:ys) = x==y || contained full full ys
 --                                             contained' full (x:xs) (y:ys) = x==y || contained full xs (y:ys)
 --
-hom0Dist = labDist diffIn numberifyBasic
+hom0Dist = labDistPerSeq diffIn numberifyBasic
 --This is faster but less generic:
 --hom0Dist = zeroDist numberifyBasic
-homDist = labDist diffIn numberifyBasic
-homGapDist = labDist diffIn numberifyGap
-homTreeDist t = labDist diffIn (numberifyGapTree t)
+homDist = labDistPerSeq diffIn numberifyBasic
+homGapDist = labDistPerSeq diffIn numberifyGap
+homTreeDist t = labDistPerSeq diffIn (numberifyGapTree t)
 
 isPermutation :: ListAlignment -> ListAlignment -> Bool
 isPermutation a b | (names a) /= (names b) = False
@@ -48,13 +48,15 @@ instance SiteLabel Int where
 instance (Integral a, Eq b, Show b,Ord a) => SiteLabel (a,b) where
   isGap (a,b) = a<0
 
+summariseDistList = foldr (\(i,j) (i2,j2) -> (i+i2,j+j2)) (0,0)
+
 -- |'labDist' computes the distance between two alignments after labelling
 -- it takes a labelling function and two alignments
 -- and returns a a tuple of (denonimator,numerator), i.e. distance is
 -- snd/fst
 labDist :: (SiteLabel a) => (DiffFunction a) -> (ListAlignment -> [[(a)]]) -> ListAlignment -> ListAlignment -> (Int,Int)
 --labDist numF aln1 aln2 | trace "Fast dist" False  = undefined
-labDist diff numF aln1 aln2 =  foldr (\(i,j) (i2,j2) -> (i+i2,j+j2)) (0,0) ans where
+labDist diff numF aln1 aln2 =  summariseDistList ans where
                                    ans = labDistPerSeq diff numF aln1 aln2
 
 labDistPerSeq diff numF aln1 aln2 = map (\(i,j)->(i+j,j)) ans where
