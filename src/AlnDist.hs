@@ -13,15 +13,15 @@ data Options = Options  { optVersion    :: Bool
 }
 
 options :: [ OptDescr (Options -> IO Options) ]
-options = [ Option ['g'] ["gap"] (NoArg (\opt-> return opt {optFunc = safeCompare homGapDist})) "Homolgy distance with labelled gaps",
-            Option ['n','s'] ["ssp"] (NoArg (\opt -> return opt {optFunc = safeCompare hom0Dist})) "Symmetrised Sum-Of-Pairs",
-            Option ['h'] ["hom"] (NoArg (\opt -> return opt {optFunc = safeCompare homDist})) "Homology distance (default)",
+options = [ Option ['p'] ["pos"] (NoArg (\opt-> return opt {optFunc = safeCompare homGapDist})) "Homolgy distance with gaps labelled by position (d_pos)",
+            Option ['n'] ["ssp"] (NoArg (\opt -> return opt {optFunc = safeCompare hom0Dist})) "Symmetrised Sum-Of-Pairs (d_SSP)",
+            Option ['s'] ["simple"] (NoArg (\opt -> return opt {optFunc = safeCompare homDist})) "Homology distance (default, d_simple)",
             Option ['t'] ["tree"] (ReqArg (\arg opt -> do treeIO <- (liftM readBiNewickTree) (readFile arg)
                                                           let tree = case treeIO of
                                                                        Right t -> t
                                                                        Left err -> error err
                                                           return $ opt {optFunc = (safeTreeCompare homTreeDist tree)}) "TREE" )
-            "Homology distance with tree-labelled gaps"
+            "Homology distance with tree-labelled gaps (d_evol)"
           ]
 safeCompare :: (ListAlignment -> ListAlignment -> (Int,Int)) -> ListAlignment -> ListAlignment -> Either String (Int,Int)
 safeCompare dist aln1 aln2 = case compatibleAlignments aln1 aln2 of 
