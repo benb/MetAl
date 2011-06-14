@@ -43,11 +43,15 @@ main = do args <- getArgs
           let Options {optFunc = f} = opts
           alignments <- mapM readAln nonOptions
           me <- getProgName
+          let preamble = unlines ["MetAl: Metrics for Multiple Sequence Alignments.",
+                                  "Usage: metal <options> alignment1 alignment2",
+                                  "This is free software, see LICENCE for details",
+                                  "Options:"]
           case alignments of 
                (x:y:[]) -> case (f x y) of 
                                    Left err -> hPutStrLn stderr err
                                    Right (d,n) -> putStrLn $ (show n) ++ " / " ++ (show d) ++ " = " ++ (show ((fromIntegral n)/(fromIntegral d)))
-               _        -> hPutStrLn stderr (usageInfo me options)
+               _        -> hPutStrLn stderr $ (usageInfo preamble options)
 
 
 
