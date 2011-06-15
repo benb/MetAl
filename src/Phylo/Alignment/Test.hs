@@ -25,7 +25,7 @@ toDist :: (Int,Int) -> Double
 toDist (i,j) = (fromIntegral j)/(fromIntegral i)
 
 allDists :: [ListAlignment -> ListAlignment -> (Int,Int)]
-allDists = map (\i-> (\x y -> DF.summariseDistList $ i x y) ) [DF.homDist,DF.hom0Dist,DF.homGapDist]
+allDists = map (\i-> (\x y -> DF.totalDistList $ i x y) ) [DF.homDist,DF.hom0Dist,DF.homGapDist]
 allSetDists = [DS.homDist, DS.hom0Dist, DS.homGapDist]
 
 test :: [ListAlignment -> ListAlignment -> (Int,Int)] -> ListAlignment -> ListAlignment -> ((Int,Int) -> Bool) -> Bool
