@@ -48,30 +48,41 @@ instance SiteLabel Int where
 instance (Integral a, Eq b, Show b,Ord a) => SiteLabel (a,b) where
   isGap (a,b) = a<0
 
+totalDistList = summariseDistList . map summariseDistList
+
+summariseDistList :: [(Int,Int)]->(Int,Int)
 summariseDistList = foldr (\(i,j) (i2,j2) -> (i+i2,j+j2)) (0,0)
+
+mergeDistList :: [[(Int,Int)]]->[(Int,Int)]
+mergeDistList xs = map (\(i,j)->(i+j,j)) $ mergeDistList' xs []
+
+mergeDistList' [] ys = ys
+mergeDistList' (x:xs) [] = mergeDistList' xs x
+mergeDistList' (x:xs) ys = mergeDistList' xs $ map (\((i,j),(i2,j2))->(i+i2,j+j2)) $ zip x ys
 
 -- |'labDist' computes the distance between two alignments after labelling
 -- it takes a labelling function and two alignments
 -- and returns a a tuple of (denonimator,numerator), i.e. distance is
 -- snd/fst
-labDist :: (SiteLabel a) => (DiffFunction a) -> (ListAlignment -> [[(a)]]) -> ListAlignment -> ListAlignment -> (Int,Int)
+--labDist :: (SiteLabel a) => (DiffFunction a) -> (ListAlignment -> [[(a)]]) -> ListAlignment -> ListAlignment -> (Int,Int)
 --labDist numF aln1 aln2 | trace "Fast dist" False  = undefined
-labDist diff numF aln1 aln2 =  summariseDistList ans where
-                                   ans = labDistPerSeq diff numF aln1 aln2
+--labDist diff numF aln1 aln2 =  summariseDistList ans where
+--                                   ans = labDistPerSeq diff numF aln1 aln2
 
-labDistPerSeq diff numF aln1 aln2 = map (\(i,j)->(i+j,j)) ans where
+labDistPerSeq diff numF aln1 aln2 = ans where
                                         num1 = numF aln1
                                         num2 = numF aln2
                                         ans = labDistPerSeq' diff num1 num2 [] [] []
 
 labDistPerSeq' diff [] [] headx heady ijs = ijs
-labDistPerSeq' diff (x:xs) (y:ys) headx heady ijs = labDistPerSeq' diff xs ys (x:headx) (y:heady) ((summariseDistList (labDistSeq diff x y xs ys (labDistSeq diff x y headx heady []))):ijs)
+labDistPerSeq' diff (x:xs) (y:ys) headx heady ijs = labDistPerSeq' diff xs ys (x:headx) (y:heady) ans where
+                                                        ans = (mergeDistList (labDistSeq diff x y xs ys (labDistSeq diff x y headx heady []))):ijs
 
 
 -- | increments the tuple (final arg) with the distance between
 -- two lists of labels and each of the corresponding lists-of-lists of labels
-labDistSeq :: DiffFunction a -> [a] -> [a] -> [[a]] ->  [[a]] -> [(Int,Int)] -> [(Int,Int)]
-labDistSeq f seqA seqB (seqA2:xs) (seqB2:ys) ans = labDistSeq f seqA seqB xs ys $! (f seqA seqA2 seqB seqB2 ans)
+labDistSeq :: DiffFunction a -> [a] -> [a] -> [[a]] ->  [[a]] -> [[(Int,Int)]] -> [[(Int,Int)]]
+labDistSeq f seqA seqB (seqA2:xs) (seqB2:ys) ans = (f seqA seqA2 seqB seqB2 []) : (labDistSeq f seqA seqB xs ys ans)
 labDistSeq f seqA seqB [] [] ans = ans
  
 
