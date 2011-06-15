@@ -114,9 +114,12 @@ diffIn [] [] [] [] t = t
 
 -- | compute distance for pairs of labels for metric 0 (SSP)
 diffSSP :: (SiteLabel a, Ord a) => DiffFunction a
---diffSSP (x:xs) (y:ys) (i,j) | trace ("diffSSP" ++ (show x) ++ " , " ++  (show y) ++ " " ++ (show (i,j))) False = undefined
+diffSSP (a:x1s) (b:x2s) (c:y1s) (d:y2s) ij | trace ("diffSSP  " ++ (show a) ++ " , " ++  (show b) ++ " : " ++ " " ++ (show c) ++ " , " ++ (show d) ++ " " ++ (show (ij))) False = undefined
+diffSSP [] [] [] [] ij | trace ("diffSSP  [],[] [],[] " ++ (show (ij))) False = undefined
+diffSSP (a:x1s) (b:x2s) (c:y1s) (d:y2s) ij | isGap b && a<c = diffSSP x1s x2s (c:y1s) (d:y2s) $ (0,0):ij
+diffSSP (a:x1s) (b:x2s) (c:y1s) (d:y2s) ij | isGap d && a>c = diffSSP (a:x1s) (b:x2s) y1s y2s $ (0,0):ij
 diffSSP (a:x1s) (b:x2s) y1s y2s ij | isGap a || isGap b = diffSSP x1s x2s y1s y2s ij
-diffSSP x1s x2s (c:y1s) (d:y2s) ij | isGap c || isGap d = diffSSP x1s x2s y1s y2s ij 
+diffSSP x1s x2s (c:y1s) (d:y2s) ij | isGap c || isGap d = diffSSP x1s x2s y1s y2s ij
 --same
 --diffSSP (x:xs) (y:ys) (i,j) | trace ("Not gap" ++ (show x) ++ " , " ++  (show y) ++ " " ++ (show (i,j))) False = undefined
 diffSSP (a:x1s) (b:x2s) (c:y1s) (d:y2s) ij | a==c && b==d = ij `seq` diffSSP x1s x2s y1s y2s $ (1,0):ij --same
