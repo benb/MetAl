@@ -54,7 +54,7 @@ seqwiseDistance first second out = case out of
                                   Right list -> putStrLn $ (unlines seqBySeq) ++ (show n) ++ " / " ++ (show d) ++ " = " ++ (show ((fromIntegral n)/(fromIntegral d))) 
                                                 where (d,n) = totalDistList list
                                                       seqNames = Phylo.Alignment.names first
-                                                      seqBySeq = map (\(nam,(i,j)) -> nam ++ " " ++ (show j) ++ " / " ++ (show i) ++ " = " ++ (show ((fromIntegral j)/(fromIntegral i)))) $ zip (reverse seqNames) (map summariseDistList list)
+                                                      seqBySeq = map (\(nam,(i,j)) -> nam ++ " " ++ (show j) ++ " / " ++ (show i) ++ " = " ++ (show ((fromIntegral j)/(fromIntegral i)))) $ zip seqNames (reverse $ map summariseDistList list)
 
 
 basewiseDistance :: String -> ListAlignment -> ListAlignment -> Either String [[(Int,Int)]] -> IO ()
@@ -65,9 +65,9 @@ basewiseDistance filename first second out = do outFile <- openFile filename Wri
                                                                          putStrLn $ (unlines seqBySeq) ++ (show n) ++ " / " ++ (show d) ++ " = " ++ (show ((fromIntegral n)/(fromIntegral d))) 
                                                                              where (d,n) = totalDistList list
                                                                                    seqNames = Phylo.Alignment.names first
-                                                                                   seqBySeq = map (\(nam,(i,j)) -> nam ++ " " ++ (show j) ++ " / " ++ (show i) ++ " = " ++ (show ((fromIntegral j)/(fromIntegral i)))) $ zip (reverse seqNames) (map summariseDistList list)
+                                                                                   seqBySeq = map (\(nam,(i,j)) -> nam ++ " " ++ (show j) ++ " / " ++ (show i) ++ " = " ++ (show ((fromIntegral j)/(fromIntegral i)))) $ zip seqNames (reverse $ map summariseDistList list)
 
-dumpCSV seqNames list handle = hPutStrLn handle $ unlines $ map (\(name,l2)->name ++ "," ++ intercalate "," (map toStr l2)) $ zip seqNames list
+dumpCSV seqNames list handle = hPutStrLn handle $ unlines $ map (\(name,l2)->name ++ "," ++ intercalate "," (map toStr l2)) $ zip seqNames (reverse list)
                                 where toStr (i,j) = show ((fromIntegral j)/(fromIntegral i))
 
 
