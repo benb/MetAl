@@ -7,11 +7,11 @@ import Text.Printf
 import System.Console.GetOpt
 import Numeric
 import Control.Monad
-import Data.List (unlines)
+import Data.List (unlines,intercalate)
 
 data Options = Options  { optVersion    :: Bool
-                        , optFunc       :: ListAlignment -> ListAlignment -> Either String [(Int,Int)]
-                        , sumFunc       :: ListAlignment -> ListAlignment -> Either String [(Int,Int)] -> IO ()
+                        , optFunc       :: ListAlignment -> ListAlignment -> Either String [[(Int,Int)]]
+                        , sumFunc       :: ListAlignment -> ListAlignment -> Either String [[(Int,Int)]] -> IO ()
 }
 
 options :: [ OptDescr (Options -> IO Options) ]
@@ -24,9 +24,10 @@ options = [ Option ['p'] ["pos"] (NoArg (\opt-> return opt {optFunc = safeCompar
                                                                        Left err -> error err
                                                           return $ opt {optFunc = (safeTreeCompare homTreeDist tree)}) "TREE" )
             "Homology distance with tree-labelled gaps (d_evol)",
-            Option ['a'] ["all-seqs"] (NoArg (\opt -> return opt {sumFunc = seqwiseDistance})) "Output distance for each sequence"
+            Option ['a'] ["all-seqs"] (NoArg (\opt -> return opt {sumFunc = seqwiseDistance})) "Output distance for each sequence",
+            Option ['c'] ["all-sites"] (ReqArg (\arg opt -> return opt {sumFunc = basewiseDistance arg}) "CSV") "Output CSV with sitewise distances (implies -a)"
           ]
-safeCompare :: (ListAlignment -> ListAlignment -> [(Int,Int)]) -> ListAlignment -> ListAlignment -> Either String [(Int,Int)]
+safeCompare :: (ListAlignment -> ListAlignment -> [[(Int,Int)]]) -> ListAlignment -> ListAlignment -> Either String [[(Int,Int)]]
 safeCompare dist aln1 aln2 = case compatibleAlignments aln1 aln2 of 
                                         False -> Left "Incompatible alignments"
                                         True -> Right $ dist aln1 aln2
@@ -45,17 +46,30 @@ startOptions = Options {optVersion = False,
 summariseDistance first second out = case out of
                                   Left err -> hPutStrLn stderr err
                                   Right list -> putStrLn $ (show n) ++ " / " ++ (show d) ++ " = " ++ (show ((fromIntegral n)/(fromIntegral d))) 
-                                                where (d,n) = sumList list
+                                                where (d,n) = totalDistList list
+
+seqwiseDistance :: ListAlignment -> ListAlignment -> Either String [[(Int,Int)]] -> IO ()
 seqwiseDistance first second out = case out of
                                   Left err -> hPutStrLn stderr err
                                   Right list -> putStrLn $ (unlines seqBySeq) ++ (show n) ++ " / " ++ (show d) ++ " = " ++ (show ((fromIntegral n)/(fromIntegral d))) 
-                                                where (d,n) = sumList list
+                                                where (d,n) = totalDistList list
                                                       seqNames = Phylo.Alignment.names first
-                                                      seqBySeq = map (\(nam,(i,j)) -> nam ++ " " ++ (show j) ++ " / " ++ (show i) ++ " = " ++ (show ((fromIntegral j)/(fromIntegral i)))) $ zip seqNames (reverse list)
+                                                      seqBySeq = map (\(nam,(i,j)) -> nam ++ " " ++ (show j) ++ " / " ++ (show i) ++ " = " ++ (show ((fromIntegral j)/(fromIntegral i)))) $ zip (reverse seqNames) (map summariseDistList list)
 
 
+basewiseDistance :: String -> ListAlignment -> ListAlignment -> Either String [[(Int,Int)]] -> IO ()
+basewiseDistance filename first second out = do outFile <- openFile filename WriteMode
+                                                case out of
+                                                        Left err -> hPutStrLn stderr err
+                                                        Right list -> do dumpCSV seqNames list outFile
+                                                                         putStrLn $ (unlines seqBySeq) ++ (show n) ++ " / " ++ (show d) ++ " = " ++ (show ((fromIntegral n)/(fromIntegral d))) 
+                                                                             where (d,n) = totalDistList list
+                                                                                   seqNames = Phylo.Alignment.names first
+                                                                                   seqBySeq = map (\(nam,(i,j)) -> nam ++ " " ++ (show j) ++ " / " ++ (show i) ++ " = " ++ (show ((fromIntegral j)/(fromIntegral i)))) $ zip (reverse seqNames) (map summariseDistList list)
 
-sumList = foldr (\(i,j) (i2,j2)-> (i+i2,j+j2)) (0,0)
+dumpCSV seqNames list handle = hPutStrLn handle $ unlines $ map (\(name,l2)->name ++ "," ++ intercalate "," (map toStr l2)) $ zip seqNames list
+                                where toStr (i,j) = show ((fromIntegral j)/(fromIntegral i))
+
 
 main = do args <- getArgs
           let (actions, nonOptions, errors)=getOpt Permute options args

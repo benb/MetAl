@@ -29,7 +29,7 @@ isPermutation a b | (names a) /= (names b) = False
 isPermutation a b = (dropGaps a) == (dropGaps b)
 
 
-zeroDist f = labDistTrig f
+--zeroDist f = labDistTrig f
                         
 siteLabel :: (ListAlignment -> [[(Int)]]) -> (Int->Maybe Int) -> (ListAlignment -> [[(Int,Maybe Int)]])
 siteLabel f gapHandler = fmap (map (map toLabel)) f where 
@@ -48,55 +48,66 @@ instance SiteLabel Int where
 instance (Integral a, Eq b, Show b,Ord a) => SiteLabel (a,b) where
   isGap (a,b) = a<0
 
+totalDistList = summariseDistList . map summariseDistList
+
+summariseDistList :: [(Int,Int)]->(Int,Int)
 summariseDistList = foldr (\(i,j) (i2,j2) -> (i+i2,j+j2)) (0,0)
+
+mergeDistList :: [[(Int,Int)]]->[(Int,Int)]
+mergeDistList xs = map (\(i,j)->(i+j,j)) $ mergeDistList' xs []
+
+mergeDistList' [] ys = ys
+mergeDistList' (x:xs) [] = mergeDistList' xs x
+mergeDistList' (x:xs) ys = mergeDistList' xs $ map (\((i,j),(i2,j2))->(i+i2,j+j2)) $ zip x ys
 
 -- |'labDist' computes the distance between two alignments after labelling
 -- it takes a labelling function and two alignments
 -- and returns a a tuple of (denonimator,numerator), i.e. distance is
 -- snd/fst
-labDist :: (SiteLabel a) => (DiffFunction a) -> (ListAlignment -> [[(a)]]) -> ListAlignment -> ListAlignment -> (Int,Int)
+--labDist :: (SiteLabel a) => (DiffFunction a) -> (ListAlignment -> [[(a)]]) -> ListAlignment -> ListAlignment -> (Int,Int)
 --labDist numF aln1 aln2 | trace "Fast dist" False  = undefined
-labDist diff numF aln1 aln2 =  summariseDistList ans where
-                                   ans = labDistPerSeq diff numF aln1 aln2
+--labDist diff numF aln1 aln2 =  summariseDistList ans where
+--                                   ans = labDistPerSeq diff numF aln1 aln2
 
-labDistPerSeq diff numF aln1 aln2 = map (\(i,j)->(i+j,j)) ans where
+labDistPerSeq diff numF aln1 aln2 = ans where
                                         num1 = numF aln1
                                         num2 = numF aln2
                                         ans = labDistPerSeq' diff num1 num2 [] [] []
 
 labDistPerSeq' diff [] [] headx heady ijs = ijs
-labDistPerSeq' diff (x:xs) (y:ys) headx heady ijs = labDistPerSeq' diff xs ys (x:headx) (y:heady) ((labDistSeq diff x y xs ys (labDistSeq diff x y headx heady (0,0))):ijs)
+labDistPerSeq' diff (x:xs) (y:ys) headx heady ijs = labDistPerSeq' diff xs ys (x:headx) (y:heady) ans where
+                                                        ans = (mergeDistList (labDistSeq diff x y xs ys (labDistSeq diff x y headx heady []))):ijs
 
 
 -- | increments the tuple (final arg) with the distance between
 -- two lists of labels and each of the corresponding lists-of-lists of labels
-labDistSeq :: ([a]->[a]->[a]->[a]->(Int,Int)->(Int,Int))-> [a] -> [a] -> [[a]] ->  [[a]] -> (Int,Int) -> (Int,Int)
-labDistSeq f seqA seqB (seqA2:xs) (seqB2:ys) ans = labDistSeq f seqA seqB xs ys $! (f seqA seqA2 seqB seqB2 ans)
+labDistSeq :: DiffFunction a -> [a] -> [a] -> [[a]] ->  [[a]] -> [[(Int,Int)]] -> [[(Int,Int)]]
+labDistSeq f seqA seqB (seqA2:xs) (seqB2:ys) ans = (f seqA seqA2 seqB seqB2 []) : (labDistSeq f seqA seqB xs ys ans)
 labDistSeq f seqA seqB [] [] ans = ans
  
 
 
---labDistTrig is like labDist but only does a vs b and not b vs a
-labDistTrig numF aln1 aln2 = (i+j,j) where
-                                num1 = numF aln1
-                                num2 = numF aln2
-                                (i,j) = labDistTrig' num1 num2 (0,0)
-        
-labDistTrig' ::  (SiteLabel a, Ord a) => [[(a)]] ->  [[(a)]] -> (Int,Int) -> (Int,Int)
-labDistTrig' (x:xs) (y:ys) (i,j) = i `seq` j `seq` labDistTrig' xs ys (labDistSeq diffSSP x y xs ys (i,j))
-labDistTrig' [] [] t = t 
-      
-type DiffFunction a = [a] -> [a] -> [a] -> [a] -> (Int,Int) -> (Int,Int)
+----labDistTrig is like labDist but only does a vs b and not b vs a
+--labDistTrig numF aln1 aln2 = (i+j,j) where
+--                                num1 = numF aln1
+--                                num2 = numF aln2
+--                                (i,j) = labDistTrig' num1 num2 (0,0)
+--        
+--labDistTrig' ::  (SiteLabel a, Ord a) => [[(a)]] ->  [[(a)]] -> (Int,Int) -> (Int,Int)
+--labDistTrig' (x:xs) (y:ys) (i,j) = i `seq` j `seq` labDistTrig' xs ys (labDistSeq diffSSP x y xs ys (i,j))
+--labDistTrig' [] [] t = t 
+--      
+type DiffFunction a = [a] -> [a] -> [a] -> [a] -> [(Int,Int)] -> [(Int,Int)]
 -- | compute distance for pairs of labels 
 diffIn :: (SiteLabel a) => DiffFunction a
 --diffIn (x:xs) (y:ys) ans | trace ((show x) ++ (show y) ++ (show ans)) False = undefined
 --First, skip gaps on left side of xs and ys
-diffIn (x1:x1s) (x2:x2s) y1s y2s (i,j) | (isGap x1) = i `seq` j `seq` diffIn x1s x2s y1s y2s (i,j)
-diffIn x1s x2s (y1:y1s) (y2:y2s) (i,j) | (isGap y1) = i `seq` j `seq` diffIn x1s x2s y1s y2s (i,j)
+diffIn (x1:x1s) (x2:x2s) y1s y2s ij | (isGap x1) = ij `seq` diffIn x1s x2s y1s y2s ij
+diffIn x1s x2s (y1:y1s) (y2:y2s) ij | (isGap y1) = ij `seq` diffIn x1s x2s y1s y2s ij 
 --Same
-diffIn (x1:x1s) (x2:x2s) (y1:y1s) (y2:y2s) (i,j) | x2==y2  = i `seq` j `seq` diffIn x1s x2s y1s y2s (i+2,j)
+diffIn (x1:x1s) (x2:x2s) (y1:y1s) (y2:y2s) ij | x2==y2  = ij `seq` diffIn x1s x2s y1s y2s $ (2,0):ij
 --Different
-                                                 | otherwise = i `seq` j `seq` diffIn x1s x2s y1s y2s (i,j+2)
+                                              | otherwise = ij `seq` diffIn x1s x2s y1s y2s $ (0,2):ij
 diffIn [] [] [] [] t = t
 
 
@@ -104,14 +115,14 @@ diffIn [] [] [] [] t = t
 -- | compute distance for pairs of labels for metric 0 (SSP)
 diffSSP :: (SiteLabel a, Ord a) => DiffFunction a
 --diffSSP (x:xs) (y:ys) (i,j) | trace ("diffSSP" ++ (show x) ++ " , " ++  (show y) ++ " " ++ (show (i,j))) False = undefined
-diffSSP (a:x1s) (b:x2s) y1s y2s (i,j) | isGap a || isGap b = diffSSP x1s x2s y1s y2s (i,j)
-diffSSP x1s x2s (c:y1s) (d:y2s) (i,j) | isGap c || isGap d = diffSSP x1s x2s y1s y2s (i,j)
+diffSSP (a:x1s) (b:x2s) y1s y2s ij | isGap a || isGap b = diffSSP x1s x2s y1s y2s ij
+diffSSP x1s x2s (c:y1s) (d:y2s) ij | isGap c || isGap d = diffSSP x1s x2s y1s y2s ij 
 --same
 --diffSSP (x:xs) (y:ys) (i,j) | trace ("Not gap" ++ (show x) ++ " , " ++  (show y) ++ " " ++ (show (i,j))) False = undefined
-diffSSP (a:x1s) (b:x2s) (c:y1s) (d:y2s) (i,j) | a==c && b==d = i `seq` j `seq` diffSSP x1s x2s y1s y2s (i+1,j) --same
-                                              | a==c = i `seq` j `seq` diffSSP x1s x2s y1s y2s (i,j+2) --different 
-                                              | a<c = i `seq` j `seq` diffSSP x1s x2s (c:y1s) (d:y2s) (i,j+1) --different 
-                                              | otherwise  = i `seq` j `seq` diffSSP (a:x1s) (b:x2s) y1s y2s (i,j+1) --different  a>c
-diffSSP [] [] [] [] (i,j) = (i,j)
-diffSSP (a:x1s) (b:x2s) [] [] (i,j) = diffSSP x1s x2s [] [] (i,j+1)
-diffSSP [] [] (c:y1s) (d:y2s) (i,j) = diffSSP [] [] y1s y2s (i,j+1)
+diffSSP (a:x1s) (b:x2s) (c:y1s) (d:y2s) ij | a==c && b==d = ij `seq` diffSSP x1s x2s y1s y2s $ (1,0):ij --same
+                                              | a==c = ij `seq` diffSSP x1s x2s y1s y2s $ (0,2):ij --different 
+                                              | a<c = ij `seq` diffSSP x1s x2s (c:y1s) (d:y2s) $ (0,1):ij --different 
+                                              | otherwise  = ij `seq` diffSSP (a:x1s) (b:x2s) y1s y2s $ (0,1):ij --different  a>c
+diffSSP [] [] [] [] ij = ij 
+diffSSP (a:x1s) (b:x2s) [] [] ij = diffSSP x1s x2s [] [] $ (0,1):ij
+diffSSP [] [] (c:y1s) (d:y2s) ij = diffSSP [] [] y1s y2s $ (0,1):ij
