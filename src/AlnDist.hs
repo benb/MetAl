@@ -8,6 +8,7 @@ import System.Console.GetOpt
 import Numeric
 import Control.Monad
 import Data.List (unlines,intercalate)
+import Text.JSON
 
 data Options = Options  { optVersion    :: Bool
                         , optFunc       :: ListAlignment -> ListAlignment -> Either String [[(Int,Int)]]
@@ -25,7 +26,8 @@ options = [ Option ['p'] ["pos"] (NoArg (\opt-> return opt {optFunc = safeCompar
                                                           return $ opt {optFunc = (safeTreeCompare homTreeDist tree)}) "TREE" )
             "Homology distance with tree-labelled gaps (d_evol)",
             Option ['a'] ["all-seqs"] (NoArg (\opt -> return opt {sumFunc = seqwiseDistance})) "Output distance for each sequence",
-            Option ['c'] ["all-sites"] (ReqArg (\arg opt -> return opt {sumFunc = basewiseDistance arg}) "CSV") "Output CSV with sitewise distances (implies -a)"
+            Option ['c'] ["all-sites"] (ReqArg (\arg opt -> return opt {sumFunc = basewiseDistance arg}) "CSV") "Output CSV with sitewise distances (implies -a)",
+            Option ['j'] ["json"] (NoArg (\opt -> return opt {sumFunc = jsonDistance})) "Output all distances to JSON format"
           ]
 safeCompare :: (ListAlignment -> ListAlignment -> [[(Int,Int)]]) -> ListAlignment -> ListAlignment -> Either String [[(Int,Int)]]
 safeCompare dist aln1 aln2 = case compatibleAlignments aln1 aln2 of 
@@ -68,9 +70,26 @@ basewiseDistance filename first second out = do outFile <- openFile filename Wri
                                                                                    seqNames = Phylo.Alignment.names first
                                                                                    seqBySeq = map (\(nam,(i,j)) -> nam ++ " " ++ (show j) ++ " / " ++ (show i) ++ " = " ++ (show ((fromIntegral j)/(fromIntegral i)))) $ zip seqNames (reverse $ map summariseDistList list)
 
+data Distances = Distances [String] [[(Int,Int)]] deriving (Show,Eq)
+
+instance JSON  Distances where
+                showJSON (Distances names dists) = showJSON ("Distances",names,dists)
+                readJSON x = Error "Unimplemented"
+
+jsonDistance :: ListAlignment -> ListAlignment -> Either String [[(Int,Int)]] -> IO ()
+jsonDistance first second out = case out of
+                                        Left err -> hPutStrLn stderr err
+                                        Right list -> putStrLn $ encode $ showJSON (showJSON total,showJSON first,showJSON second, showJSON (Distances seqNames (reverse (map reverse list))))
+                                                               where (d,n) = totalDistList list
+                                                                     total::(String,Double,Double,Double)
+                                                                     total = ("total",fromIntegral n,fromIntegral d,(fromIntegral n)/(fromIntegral d))
+                                                                     seqNames = Phylo.Alignment.names first
+                                                                     seqBySeq = map (\(nam,(i,j)) -> nam ++ " " ++ (show j) ++ " / " ++ (show i) ++ " = " ++ (show ((fromIntegral j)/(fromIntegral i)))) $ zip seqNames (reverse $ map summariseDistList list)
+
+
+
 dumpCSV seqNames list handle = hPutStrLn handle $ unlines $ map (\(name,l2)->name ++ "," ++ intercalate "," (reverse $ map toStr l2)) $ zip seqNames (reverse list)
                                 where toStr (i,j) = show ((fromIntegral j)/(fromIntegral i))
-
 
 main = do args <- getArgs
           let (actions, nonOptions, errors)=getOpt Permute options args
