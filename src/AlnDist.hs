@@ -17,9 +17,9 @@ data Options = Options  { optVersion    :: Bool
 }
 
 options :: [ OptDescr (Options -> IO Options) ]
-options = [ Option ['p'] ["pos"] (NoArg (\opt-> return opt {optFunc = safeCompare homGapDist})) "Homolgy distance with gaps labelled by position (d_pos)",
+options = [ Option ['p'] ["pos"] (NoArg (\opt-> return opt {optFunc = safeCompare homGapDist})) "Homolgy distance with gaps labelled by position (default, d_pos)",
             Option ['n'] ["ssp"] (NoArg (\opt -> return opt {optFunc = safeCompare hom0Dist})) "Symmetrised Sum-Of-Pairs (d_SSP)",
-            Option ['s'] ["simple"] (NoArg (\opt -> return opt {optFunc = safeCompare homDist})) "Homology distance (default, d_simple)",
+            Option ['s'] ["simple"] (NoArg (\opt -> return opt {optFunc = safeCompare homDist})) "Homology distance (d_simple)",
             Option ['t'] ["tree"] (ReqArg (\arg opt -> do treeIO <- (liftM readBiNewickTree) (readFile arg)
                                                           let tree = case treeIO of
                                                                        Right t -> t
@@ -43,7 +43,7 @@ safeTreeCompare dist tree aln1 aln2 = case (compatible tree aln1) of
 
 
 startOptions = Options {optVersion = False,
-                        optFunc = safeCompare homDist,
+                        optFunc = safeCompare homGapDist,
                         sumFunc = summariseDistance }
 
 summariseDistance first second out = case out of
