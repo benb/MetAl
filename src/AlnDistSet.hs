@@ -19,8 +19,8 @@ parseCommand ("-t":xs) = diffTree homTreeDist xs
 parseCommand xs = Main.diff homDist xs
 
 diffTree :: (Node->ListAlignment->ListAlignment->(Int,Int)) -> [String] -> IO String
-diffTree dist (z:x:y:xs) = do rawa <- parseAlignmentFile parseFasta x
-                              rawb <- parseAlignmentFile parseFasta y
+diffTree dist (z:x:y:xs) = do rawa <- parseAlignmentFile parseUniversal x
+                              rawb <- parseAlignmentFile parseUniversal y
                               let a = fmap sortAlignment rawa
                               let b = fmap sortAlignment rawb
                               treeStr <- readFile z
@@ -32,8 +32,8 @@ diffTree dist x = return usage
 usage = "Usage: alndist <-t> <tree> <-g> <-n> <fasta1> <fasta2>"
 
 diff :: (ListAlignment -> ListAlignment -> (Int,Int)) -> [String] -> IO String
-diff dist (x:y:xs) = do rawa <- parseAlignmentFile parseFasta x
-                        rawb <- parseAlignmentFile parseFasta y
+diff dist (x:y:xs) = do rawa <- parseAlignmentFile parseUniversal x
+                        rawb <- parseAlignmentFile parseUniversal y
                         let a = fmap sortAlignment rawa
                         let b = fmap sortAlignment rawb
                         let ans = (liftM2 dist) a b
