@@ -9,6 +9,7 @@ import Numeric
 import Control.Monad
 import Data.List (unlines,intercalate)
 import Text.JSON
+import Debug.Trace
 
 data Options = Options  { optVersion    :: Bool
                         , optFunc       :: ListAlignment -> ListAlignment -> Either String [[(Int,Int)]]
@@ -31,7 +32,7 @@ options = [ Option ['p'] ["pos"] (NoArg (\opt-> return opt {optFunc = safeCompar
           ]
 safeCompare :: (ListAlignment -> ListAlignment -> [[(Int,Int)]]) -> ListAlignment -> ListAlignment -> Either String [[(Int,Int)]]
 safeCompare dist aln1 aln2 = case compatibleAlignments aln1 aln2 of 
-                                        False -> Left "Incompatible alignments"
+                                        False -> trace ((show aln1) ++ "\n\n" ++ (show aln2)) Left "Incompatible alignments"
                                         True -> Right $ dist aln1 aln2
 
 safeTreeCompare dist tree aln1 aln2 = case (compatible tree aln1) of
@@ -108,7 +109,7 @@ main = do args <- getArgs
 
 
 readAln :: String -> IO ListAlignment
-readAln x = do rawa <- parseAlignmentFile parseFasta x
+readAln x = do rawa <- parseAlignmentFile parseUniversal x
                return $ case rawa of 
                           Right aln -> aln
                           Left err -> error err 
