@@ -10,6 +10,7 @@ You need my phyhs library, first. Neither this nor phyhs are yet on hackage, so 
 
     git clone git://github.com/benb/EvoHaskell.git phyhs
     cd phyhs
+    cabal update
     cabal install
     cd ..
     git clone git://github.com/benb/MetAl.git metal
