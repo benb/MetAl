@@ -6,7 +6,7 @@ Installation
 ------------
 You need my phyhs library, first. Neither this nor phyhs are yet on hackage, so you'll have to use git. You also need [Haskell-Platform] installed.
 
-[Haskell-Platform]: http://www.haskell-platform.org
+[Haskell-Platform]: http://haskell.org/platform
 
     git clone git://github.com/benb/EvoHaskell.git phyhs
     cd phyhs
