@@ -14,9 +14,9 @@ Build-Type:     Simple
 Executable metal
         Main-Is: AlnDist.hs
         HS-Source-Dirs: src
-Executable metalset
-        Main-Is: AlnDistSet.hs
-        HS-Source-Dirs: src
+--Executable metalset
+--        Main-Is: AlnDistSet.hs
+--        HS-Source-Dirs: src
 library
         Exposed-Modules: Phylo.Alignment.Dist, Phylo.Alignment.DistSet, Phylo.Alignment.Test
         HS-Source-Dirs: src
