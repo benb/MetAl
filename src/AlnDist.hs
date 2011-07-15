@@ -8,6 +8,8 @@ import System.Console.GetOpt
 import Numeric
 import Control.Monad
 import Data.List (unlines,intercalate)
+import Text.JSON
+import Debug.Trace
 
 data Options = Options  { optVersion    :: Bool
                         , optFunc       :: ListAlignment -> ListAlignment -> Either String [[(Int,Int)]]
@@ -15,9 +17,9 @@ data Options = Options  { optVersion    :: Bool
 }
 
 options :: [ OptDescr (Options -> IO Options) ]
-options = [ Option ['p'] ["pos"] (NoArg (\opt-> return opt {optFunc = safeCompare homGapDist})) "Homolgy distance with gaps labelled by position (d_pos)",
+options = [ Option ['p'] ["pos"] (NoArg (\opt-> return opt {optFunc = safeCompare homGapDist})) "Homolgy distance with gaps labelled by position (default, d_pos)",
             Option ['n'] ["ssp"] (NoArg (\opt -> return opt {optFunc = safeCompare hom0Dist})) "Symmetrised Sum-Of-Pairs (d_SSP)",
-            Option ['s'] ["simple"] (NoArg (\opt -> return opt {optFunc = safeCompare homDist})) "Homology distance (default, d_simple)",
+            Option ['s'] ["simple"] (NoArg (\opt -> return opt {optFunc = safeCompare homDist})) "Homology distance (d_simple)",
             Option ['t'] ["tree"] (ReqArg (\arg opt -> do treeIO <- (liftM readBiNewickTree) (readFile arg)
                                                           let tree = case treeIO of
                                                                        Right t -> t
@@ -25,11 +27,12 @@ options = [ Option ['p'] ["pos"] (NoArg (\opt-> return opt {optFunc = safeCompar
                                                           return $ opt {optFunc = (safeTreeCompare homTreeDist tree)}) "TREE" )
             "Homology distance with tree-labelled gaps (d_evol)",
             Option ['a'] ["all-seqs"] (NoArg (\opt -> return opt {sumFunc = seqwiseDistance})) "Output distance for each sequence",
-            Option ['c'] ["all-sites"] (ReqArg (\arg opt -> return opt {sumFunc = basewiseDistance arg}) "CSV") "Output CSV with sitewise distances (implies -a)"
+            Option ['c'] ["all-sites"] (ReqArg (\arg opt -> return opt {sumFunc = basewiseDistance arg}) "CSV") "Output CSV with sitewise distances (implies -a)",
+            Option ['j'] ["json"] (NoArg (\opt -> return opt {sumFunc = jsonDistance})) "Output all distances to JSON format"
           ]
 safeCompare :: (ListAlignment -> ListAlignment -> [[(Int,Int)]]) -> ListAlignment -> ListAlignment -> Either String [[(Int,Int)]]
 safeCompare dist aln1 aln2 = case compatibleAlignments aln1 aln2 of 
-                                        False -> Left "Incompatible alignments"
+                                        False -> trace ((show aln1) ++ "\n\n" ++ (show aln2)) Left "Incompatible alignments"
                                         True -> Right $ dist aln1 aln2
 
 safeTreeCompare dist tree aln1 aln2 = case (compatible tree aln1) of
@@ -40,7 +43,7 @@ safeTreeCompare dist tree aln1 aln2 = case (compatible tree aln1) of
 
 
 startOptions = Options {optVersion = False,
-                        optFunc = safeCompare homDist,
+                        optFunc = safeCompare homGapDist,
                         sumFunc = summariseDistance }
 
 summariseDistance first second out = case out of
@@ -68,9 +71,26 @@ basewiseDistance filename first second out = do outFile <- openFile filename Wri
                                                                                    seqNames = Phylo.Alignment.names first
                                                                                    seqBySeq = map (\(nam,(i,j)) -> nam ++ " " ++ (show j) ++ " / " ++ (show i) ++ " = " ++ (show ((fromIntegral j)/(fromIntegral i)))) $ zip seqNames (reverse $ map summariseDistList list)
 
+data Distances = Distances [String] [[(Int,Int)]] deriving (Show,Eq)
+
+instance JSON  Distances where
+                showJSON (Distances names dists) = showJSON ("Distances",names,dists)
+                readJSON x = Error "Unimplemented"
+
+jsonDistance :: ListAlignment -> ListAlignment -> Either String [[(Int,Int)]] -> IO ()
+jsonDistance first second out = case out of
+                                        Left err -> hPutStrLn stderr err
+                                        Right list -> putStrLn $ encode $ showJSON (showJSON total,showJSON first,showJSON second, showJSON (Distances seqNames (reverse (map reverse list))))
+                                                               where (d,n) = totalDistList list
+                                                                     total::(String,Double,Double,Double)
+                                                                     total = ("total",fromIntegral n,fromIntegral d,(fromIntegral n)/(fromIntegral d))
+                                                                     seqNames = Phylo.Alignment.names first
+                                                                     seqBySeq = map (\(nam,(i,j)) -> nam ++ " " ++ (show j) ++ " / " ++ (show i) ++ " = " ++ (show ((fromIntegral j)/(fromIntegral i)))) $ zip seqNames (reverse $ map summariseDistList list)
+
+
+
 dumpCSV seqNames list handle = hPutStrLn handle $ unlines $ map (\(name,l2)->name ++ "," ++ intercalate "," (reverse $ map toStr l2)) $ zip seqNames (reverse list)
                                 where toStr (i,j) = show ((fromIntegral j)/(fromIntegral i))
-
 
 main = do args <- getArgs
           let (actions, nonOptions, errors)=getOpt Permute options args
@@ -89,7 +109,7 @@ main = do args <- getArgs
 
 
 readAln :: String -> IO ListAlignment
-readAln x = do rawa <- parseAlignmentFile parseFasta x
+readAln x = do rawa <- parseAlignmentFile parseUniversal x
                return $ case rawa of 
                           Right aln -> aln
                           Left err -> error err 
