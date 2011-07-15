@@ -119,7 +119,7 @@ main = do args <- getArgs
           me <- getProgName
           let preamble = unlines ["MetAl: Metrics for Multiple Sequence Alignments.",
                                   "Usage: metal <options> alignment1 alignment2",
-                                  "This is free software, see LICENCE for details",
+                                  "This is free software, see COPYING for details",
                                   "Options:"]
           case alignments of 
                (x:y:[]) -> sF x y (f x y) 
