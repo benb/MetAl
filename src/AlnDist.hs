@@ -117,7 +117,7 @@ main = do args <- getArgs
           let Options {optFunc = f, sumFunc = sF} = opts
           alignments <- mapM readAln nonOptions
           me <- getProgName
-          let preamble = unlines ["MetAl: Metrics for Multiple Sequence Alignments.",
+          let preamble = unlines ["MetAl 1.0: Metrics for Multiple Sequence Alignments.",
                                   "Usage: metal <options> alignment1 alignment2",
                                   "This is free software, see COPYING for details",
                                   "Options:"]
