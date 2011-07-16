@@ -10,6 +10,8 @@ Binaries are available for Windows, Linux and Mac on [Github](https://github.com
 Run `metal -h` for usage. There are four metrics, to be detailed in an
 upcoming publication.
 
+Metal accepts fasta and "relaxed phylip" format. In case of doubt, use fasta.
+
 ## Installation from source
 
 MetAl is written in Haskell. 
