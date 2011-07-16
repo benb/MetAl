@@ -3,18 +3,7 @@ alternative alignments of the same sequences.
 
 ## Download
 
-Binaries are available for Windows, Linux and Mac..
-
-### Windows
-[metal-win.zip](http://foo/)
-
-### Linux
-Modern distros: [metal-linux.tar.gz](http://foo/)
-
-Older distros: [metal-linux-glibc2.5.tar.gz](http://foo/)
-
-### Mac
-[metal-mac.tar.gz](http://foo/)
+Binaries are available for Windows, Linux and Mac on [Github](https://github.com/benb/EvoHaskell/downloads).
 
 ## Usage
 
@@ -25,12 +14,12 @@ upcoming publication.
 
 MetAl is written in Haskell. 
 
-You need my phyhs library first. Neither this nor phyhs are yet on
+You need my phytree library first. Neither this nor phyhs are yet on
 Hackage, so you`ll have to use git. You also need
 [Haskell-Platform](http://haskell.org/platform) installed.
 
-    git clone git://github.com/benb/EvoHaskell.git phyhs
-            cd phyhs
+    git clone git://github.com/benb/phytree.git phytree
+            cd phytree
             cabal update
             cabal install
             cd ..
