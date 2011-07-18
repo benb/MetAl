@@ -50,9 +50,9 @@ options = [ Option ['p'] ["pos"] (NoArg (\opt-> return opt {optFunc = safeCompar
             Option ['j'] ["json"] (NoArg (\opt -> return opt {sumFunc = jsonDistance})) "Output all distances to JSON format"
           ]
 safeCompare :: (ListAlignment -> ListAlignment -> [[(Int,Int)]]) -> ListAlignment -> ListAlignment -> Either String [[(Int,Int)]]
-safeCompare dist aln1 aln2 = case compatibleAlignments aln1 aln2 of 
-                                        False -> trace ((show aln1) ++ "\n\n" ++ (show aln2)) Left "Incompatible alignments"
-                                        True -> Right $ dist aln1 aln2
+safeCompare dist aln1 aln2 = case incompatibilities aln1 aln2 of 
+                                        (Just err) -> Left err
+                                        Nothing -> Right $ dist aln1 aln2
 
 safeTreeCompare dist tree aln1 aln2 = case (compatible tree aln1) of
                                         False -> Left "Tree is incompatible with first alignment"
@@ -131,4 +131,4 @@ readAln :: String -> IO ListAlignment
 readAln x = do rawa <- parseAlignmentFile parseUniversal x
                return $ case rawa of 
                           Right aln -> aln
-                          Left err -> error err 
+                          Left err -> error $ "Error parsing alignment " ++ x ++ ": " ++ err 
