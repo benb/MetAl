@@ -1,16 +1,30 @@
 task :package do |t|
         require 'rbconfig'
+	require 'pathname'
         include Config
 
-        def deploy(target)
+	def deploy_raw(target)
                 rm_rf target
                 Dir.mkdir target
-                copy_entry "dist/build/metal/metal", target+"/metal", preserve=true #doesn't screw up permisions on mac
-                cp "README.md", target
-                sh "tar zcvf #{target}.tar.gz #{target}"
+                cp Pathname.getwd + "README.md", target
+		bindir = Pathname.getwd + "dist" + "build" + "metal"
+		if (CONFIG['host_os']=~/w32/)
+			binfile=bindir+"metal.exe"
+		else
+			binfile=bindir+"metal"
+		end
+                cp binfile, File.join(target,"/metal")
         end
+	def deploy(target)
+		deploy_raw target
+                sh "tar zcvf #{target}.tar.gz #{target}"
+	end
+	def deploy_7z(target)
+		deploy_raw target
+		sh "7z a #{target}.zip #{target}"
+	end
 
-        version = `grep ^Version: dist.cabal | awk '{print $2}'`.chomp
+        version = File.open("dist.cabal").grep(/^Version/)[0].split(" ")[1]
         puts CONFIG['host_os'] + " " + CONFIG['host_cpu']
         if (CONFIG['host_os']=="linux")
                 if (CONFIG['host_cpu']=="amd64")
@@ -25,4 +39,11 @@ task :package do |t|
                         target = "metal-mac-#{version}"
                         deploy(target)
         end
+        if (CONFIG['host_os']=~/w32/)
+                        sh "cabal clean"
+			sh "cabal configure --ghc-option=-O2"
+			sh "cabal build"
+                        target = "metal-win-#{version}"
+			deploy_7z(target)
+	end
 end
