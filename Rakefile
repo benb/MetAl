@@ -32,6 +32,11 @@ task :package do |t|
                         target = "metal-linux64-#{version}"
                         deploy(target)
                end
+               if (CONFIG['host_cpu']=~/i.86/)
+                       sh "cabal clean && cabal configure --ghc-options='-static -optl-static -optl-pthread -O2' && cabal build"
+                        target = "metal-linux32-#{version}"
+                        deploy(target)
+               end
         end
 
         if (CONFIG['host_os']=~/darwin/)
