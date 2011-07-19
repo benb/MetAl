@@ -10,10 +10,11 @@ task :package do |t|
 		bindir = Pathname.getwd + "dist" + "build" + "metal"
 		if (CONFIG['host_os']=~/w32/)
 			binfile=bindir+"metal.exe"
+			cp binfile, File.join(target,"/metal.exe")
 		else
 			binfile=bindir+"metal"
+			cp binfile, File.join(target,"/metal")
 		end
-                cp binfile, File.join(target,"/metal")
         end
 	def deploy(target)
 		deploy_raw target
