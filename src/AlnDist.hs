@@ -31,14 +31,15 @@ import Text.JSON
 import Debug.Trace
 
 data Options = Options  { optVersion    :: Bool
-                        , optFunc       :: ListAlignment -> ListAlignment -> Either String [[(Int,Int)]]
+                        , optFunc       :: ListAlignment -> ListAlignment -> [[(Int,Int)]]
                         , sumFunc       :: ListAlignment -> ListAlignment -> Either String [[(Int,Int)]] -> IO ()
+                        , compareFunc     :: (ListAlignment -> ListAlignment -> [[(Int,Int)]]) -> ListAlignment -> ListAlignment -> Either String [[(Int,Int)]]
 }
 
 options :: [ OptDescr (Options -> IO Options) ]
-options = [ Option ['p'] ["pos"] (NoArg (\opt-> return opt {optFunc = safeCompare homGapDist})) "Homolgy distance with gaps labelled by position (default, d_pos)",
-            Option ['n'] ["ssp"] (NoArg (\opt -> return opt {optFunc = safeCompare hom0Dist})) "Symmetrised Sum-Of-Pairs (d_SSP)",
-            Option ['s'] ["simple"] (NoArg (\opt -> return opt {optFunc = safeCompare homDist})) "Homology distance (d_simple)",
+options = [ Option ['p'] ["pos"] (NoArg (\opt-> return opt {optFunc = homGapDist})) "Homolgy distance with gaps labelled by position (default, d_pos)",
+            Option ['n'] ["ssp"] (NoArg (\opt -> return opt {optFunc = hom0Dist})) "Symmetrised Sum-Of-Pairs (d_SSP)",
+            Option ['s'] ["simple"] (NoArg (\opt -> return opt {optFunc = homDist})) "Homology distance (d_simple)",
             Option ['t'] ["tree"] (ReqArg (\arg opt -> do treeIO <- (liftM readBiNewickTree) (readFile arg)
                                                           let tree = case treeIO of
                                                                        Right t -> t
@@ -47,23 +48,30 @@ options = [ Option ['p'] ["pos"] (NoArg (\opt-> return opt {optFunc = safeCompar
             "Homology distance with tree-labelled gaps (d_evol)",
             Option ['a'] ["all-seqs"] (NoArg (\opt -> return opt {sumFunc = seqwiseDistance})) "Output distance for each sequence",
             Option ['c'] ["all-sites"] (ReqArg (\arg opt -> return opt {sumFunc = basewiseDistance arg}) "CSV") "Output CSV with sitewise distances (implies -a)",
-            Option ['j'] ["json"] (NoArg (\opt -> return opt {sumFunc = jsonDistance})) "Output all distances to JSON format"
+            Option ['j'] ["json"] (NoArg (\opt -> return opt {sumFunc = jsonDistance})) "Output all distances to JSON format",
+            Option ['f'] ["force"] (NoArg (\opt -> return opt {compareFunc=unsafeCompare})) "Force comparsion of possibly incompatible alignments"
           ]
+
 safeCompare :: (ListAlignment -> ListAlignment -> [[(Int,Int)]]) -> ListAlignment -> ListAlignment -> Either String [[(Int,Int)]]
 safeCompare dist aln1 aln2 = case incompatibilities aln1 aln2 of 
-                                        (Just err) -> Left err
-                                        Nothing -> Right $ dist aln1 aln2
+                                        (Incompat (fatal,err):errs) -> Left err
+                                        [] -> Right $ dist aln1 aln2
+unsafeCompare dist aln1 aln2 = case (filter (\(Incompat (fatal,err)) -> fatal ) $ incompatibilities aln1 aln2) of 
+                                        (Incompat (fatal,err):errs) -> Left err
+                                        [] -> Right $ dist aln1 aln2
+
 
 safeTreeCompare dist tree aln1 aln2 = case (compatible tree aln1) of
-                                        False -> Left "Tree is incompatible with first alignment"
+                                        False -> error "Tree is incompatible with first alignment"
                                         True -> case (compatible tree aln2) of 
-                                                False -> Left "Tree is incompatible with second alignment"
-                                                True -> safeCompare (dist tree) aln1 aln2
+                                                False -> error "Tree is incompatible with second alignment"
+                                                True -> (dist tree) aln1 aln2
 
 
 startOptions = Options {optVersion = False,
-                        optFunc = safeCompare homGapDist,
-                        sumFunc = summariseDistance }
+                        optFunc = homGapDist,
+                        sumFunc = summariseDistance,
+                        compareFunc = safeCompare }
 
 summariseDistance first second out = case out of
                                   Left err -> hPutStrLn stderr err
@@ -114,7 +122,8 @@ dumpCSV seqNames list handle = hPutStrLn handle $ unlines $ map (\(name,l2)->nam
 main = do args <- getArgs
           let (actions, nonOptions, errors)=getOpt Permute options args
           opts <- foldl (>>=) (return startOptions) actions
-          let Options {optFunc = f, sumFunc = sF} = opts
+          let Options {optFunc = optF, sumFunc = sF, compareFunc = cF} = opts
+          let f = cF optF
           alignments <- mapM readAln nonOptions
           me <- getProgName
           let preamble = unlines ["MetAl 1.0: Metrics for Multiple Sequence Alignments.",
