@@ -31,6 +31,7 @@ import Text.JSON
 import Debug.Trace
 
 data Options = Options  { optVersion    :: Bool
+                        , preprocFunc      :: ListAlignment -> ListAlignment
                         , optFunc       :: ListAlignment -> ListAlignment -> [[(Int,Int)]]
                         , sumFunc       :: ListAlignment -> ListAlignment -> Either String [[(Int,Int)]] -> IO ()
                         , compareFunc     :: (ListAlignment -> ListAlignment -> [[(Int,Int)]]) -> ListAlignment -> ListAlignment -> Either String [[(Int,Int)]]
@@ -38,8 +39,8 @@ data Options = Options  { optVersion    :: Bool
 
 options :: [ OptDescr (Options -> IO Options) ]
 options = [ Option ['p'] ["pos"] (NoArg (\opt-> return opt {optFunc = homGapDist})) "Homolgy distance with gaps labelled by position (default, d_pos)",
-            Option ['n'] ["ssp"] (NoArg (\opt -> return opt {optFunc = hom0Dist})) "Symmetrised Sum-Of-Pairs (d_SSP)",
-            Option ['s'] ["simple"] (NoArg (\opt -> return opt {optFunc = homDist})) "Homology distance (d_simple)",
+            Option ['n'] ["ssp"] (NoArg (\opt -> return opt {optFunc = hom0Dist, preprocFunc = identity})) "Symmetrised Sum-Of-Pairs (d_SSP)",
+            Option ['s'] ["simple"] (NoArg (\opt -> return opt {optFunc = homDist, preprocFunc = identity})) "Homology distance (d_simple)",
             Option ['t'] ["tree"] (ReqArg (\arg opt -> do treeIO <- (liftM readBiNewickTree) (readFile arg)
                                                           let tree = case treeIO of
                                                                        Right t -> t
@@ -70,8 +71,11 @@ safeTreeCompare dist tree aln1 aln2 = case (compatible tree aln1) of
 
 startOptions = Options {optVersion = False,
                         optFunc = homGapDist,
+                        preprocFunc = sortAlignment,
                         sumFunc = summariseDistance,
                         compareFunc = safeCompare }
+
+identity x = x
 
 summariseDistance first second out = case out of
                                   Left err -> hPutStrLn stderr err
@@ -122,9 +126,10 @@ dumpCSV seqNames list handle = hPutStrLn handle $ unlines $ map (\(name,l2)->nam
 main = do args <- getArgs
           let (actions, nonOptions, errors)=getOpt Permute options args
           opts <- foldl (>>=) (return startOptions) actions
-          let Options {optFunc = optF, sumFunc = sF, compareFunc = cF} = opts
+          let Options {optFunc = optF, sumFunc = sF, compareFunc = cF, preprocFunc = pp} = opts
           let f = cF optF
-          alignments <- mapM readAln nonOptions
+          alignments' <- mapM readAln nonOptions
+          let alignments = map pp alignments'
           me <- getProgName
           let preamble = unlines ["MetAl 1.0: Metrics for Multiple Sequence Alignments.",
                                   "Usage: metal <options> alignment1 alignment2",
