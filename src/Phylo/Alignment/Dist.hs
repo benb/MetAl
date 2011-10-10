@@ -20,6 +20,7 @@
 module Phylo.Alignment.Dist where
 import Phylo.Alignment
 import Debug.Trace
+import Data.List
 
 --
 --gapEvent :: Node -> ListAlignment -> [[Maybe Split]]
@@ -74,6 +75,7 @@ summariseDistList = foldr (\(i,j) (i2,j2) -> (i+i2,j+j2)) (0,0)
 mergeDistList :: [[(Int,Int)]]->[(Int,Int)]
 mergeDistList xs = map (\(i,j)->(i+j,j)) $ mergeDistList' xs []
 
+{-mergeDistList' xs [] | traceShow (map length xs) False = undefined-}
 mergeDistList' [] ys = ys
 mergeDistList' (x:xs) [] = mergeDistList' xs x
 mergeDistList' (x:xs) ys = mergeDistList' xs $ map (\((i,j),(i2,j2))->(i+i2,j+j2)) $ zip x ys
@@ -99,10 +101,11 @@ labDistPerSeq' diff (x:xs) (y:ys) headx heady ijs = labDistPerSeq' diff xs ys (x
 
 -- | increments the tuple (final arg) with the distance between
 -- two lists of labels and each of the corresponding lists-of-lists of labels
-labDistSeq :: DiffFunction a -> [a] -> [a] -> [[a]] ->  [[a]] -> [[(Int,Int)]] -> [[(Int,Int)]]
+labDistSeq :: Show a =>  DiffFunction a -> [a] -> [a] -> [[a]] ->  [[a]] -> [[(Int,Int)]] -> [[(Int,Int)]]
 labDistSeq f seqA seqB (seqA2:xs) (seqB2:ys) ans = (f seqA seqA2 seqB seqB2 []) : (labDistSeq f seqA seqB xs ys ans)
 labDistSeq f seqA seqB [] [] ans = ans
  
+traceX x = trace ("OK " ++ (show x)) x
 
 
 ----labDistTrig is like labDist but only does a vs b and not b vs a
@@ -129,21 +132,16 @@ diffIn (x1:x1s) (x2:x2s) (y1:y1s) (y2:y2s) ij | x2==y2  = ij `seq` diffIn x1s x2
 diffIn [] [] [] [] t = t
 
 
-
 -- | compute distance for pairs of labels for metric 0 (SSP)
 diffSSP :: (SiteLabel a, Ord a) => DiffFunction a
---diffSSP (a:x1s) (b:x2s) (c:y1s) (d:y2s) ij | trace ("diffSSP  " ++ (show a) ++ " , " ++  (show b) ++ " : " ++ " " ++ (show c) ++ " , " ++ (show d) ++ " " ++ (show (ij))) False = undefined
---diffSSP [] [] [] [] ij | trace ("diffSSP  [],[] [],[] " ++ (show (ij))) False = undefined
-diffSSP (a:x1s) (b:x2s) (c:y1s) (d:y2s) ij | isGap b && a<c = diffSSP x1s x2s (c:y1s) (d:y2s) $ (0,0):ij
-diffSSP (a:x1s) (b:x2s) (c:y1s) (d:y2s) ij | isGap d && a>c = diffSSP (a:x1s) (b:x2s) y1s y2s $ (0,0):ij
-diffSSP (a:x1s) (b:x2s) y1s y2s ij | isGap a || isGap b = diffSSP x1s x2s y1s y2s ij
-diffSSP x1s x2s (c:y1s) (d:y2s) ij | isGap c || isGap d = diffSSP x1s x2s y1s y2s ij
---same
---diffSSP (x:xs) (y:ys) (i,j) | trace ("Not gap" ++ (show x) ++ " , " ++  (show y) ++ " " ++ (show (i,j))) False = undefined
-diffSSP (a:x1s) (b:x2s) (c:y1s) (d:y2s) ij | a==c && b==d = ij `seq` diffSSP x1s x2s y1s y2s $ (1,0):ij --same
-                                              | a==c = ij `seq` diffSSP x1s x2s y1s y2s $ (0,2):ij --different 
-                                              | a<c = ij `seq` diffSSP x1s x2s (c:y1s) (d:y2s) $ (0,1):ij --different 
-                                              | otherwise  = ij `seq` diffSSP (a:x1s) (b:x2s) y1s y2s $ (0,1):ij --different  a>c
+{-diffSSP (a:x1s) (b:x2s) (c:y1s) (d:y2s) ij | trace ("diffSSP  " ++ (show a) ++ " , " ++  (show b) ++ " : " ++ " " ++ (show c) ++ " , " ++ (show d) ++ " " ++ (show (ij))) False = undefined-}
+{-diffSSP [] [] [] [] ij | trace ("diffSSP  [],[] [],[] " ++ (show (ij))) False = undefined-}
+diffSSP (a:x1s) (b:x2s) y1s y2s ij | isGap a  = diffSSP x1s x2s y1s y2s ij
+diffSSP x1s x2s (c:y1s) (d:y2s) ij | isGap c  = diffSSP x1s x2s y1s y2s ij
+diffSSP (a:x1s) (b:x2s) (c:y1s) (d:y2s) ij | a/=c = trace ((show a ) ++ " " ++ (show c)) $ error "ERROR!"
+diffSSP (a:x1s) (b:x2s) (c:y1s) (d:y2s) ij | isGap b && (not $ isGap d) = diffSSP x1s x2s y1s y2s $ (0,1):ij -- we have a gap, other has pair
+diffSSP (a:x1s) (b:x2s) (c:y1s) (d:y2s) ij | isGap b && isGap d = diffSSP x1s x2s y1s y2s $ (0,0):ij -- we have 2 gaps 
+diffSSP (a:x1s) (b:x2s) (c:y1s) (d:y2s) ij | isGap d = diffSSP x1s x2s y1s y2s $ (0,1):ij -- other has a gap so our pair is unique
+diffSSP (a:x1s) (b:x2s) (c:y1s) (d:y2s) ij | b/=d  = diffSSP x1s x2s y1s y2s $ (0,2):ij -- other has a different pair so ours is unique
+diffSSP (a:x1s) (b:x2s) (c:y1s) (d:y2s) ij | b==d  = diffSSP x1s x2s y1s y2s $ (1,0):ij -- match
 diffSSP [] [] [] [] ij = ij 
-diffSSP (a:x1s) (b:x2s) [] [] ij = diffSSP x1s x2s [] [] $ (0,1):ij
-diffSSP [] [] (c:y1s) (d:y2s) ij = diffSSP [] [] y1s y2s $ (0,1):ij

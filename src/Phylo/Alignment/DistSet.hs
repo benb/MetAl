@@ -36,7 +36,7 @@ isPermutation a b = (dropGaps a) == (dropGaps b)
 genDist :: (ListAlignment -> [[(Int)]]) -> ListAlignment -> ListAlignment -> (Int,Int)
 genDist f = labDist (setPair []) setDist f
 
-zeroDist f = labDist (setPairTrig) setDistZero f
+zeroDist f = labDist (setPairTrig []) setDistZero f
                         
 siteLabel :: (ListAlignment -> [[(Int)]]) -> (Int->Maybe Int) -> (ListAlignment -> [[(Int,Maybe Int)]])
 siteLabel f gapHandler = fmap (map (map toLabel)) f where 
@@ -75,8 +75,8 @@ labDist pairFunc distFunc numF aln1 aln2 = distFunc set1 set2 where
                            toSet2 (x:xs) = (Set.fromList x) `Set.union` (toSet2 xs)
                            toSet2 [] = Set.fromList []
 
-setPairTrig [] = []
-setPairTrig (x:xs) = (map (\l -> filter neitherGap $ l `zip` x) xs ) : setPairTrig xs
+setPairTrig xs [] = []
+setPairTrig ys (x:xs) = ((map (\l -> filter neitherGap $ l `zip` x) (xs) ) ++ (map (\l -> filter neitherGap $ x `zip` l) (ys))) : setPairTrig (x:ys) xs
 
 --need to filter out (gap,x) comparisons
 
