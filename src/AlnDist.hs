@@ -50,7 +50,9 @@ options = [ Option ['p'] ["pos"] (NoArg (\opt-> return opt {optFunc = homGapDist
             Option ['a'] ["all-seqs"] (NoArg (\opt -> return opt {sumFunc = seqwiseDistance})) "Output distance for each sequence",
             Option ['c'] ["all-sites"] (ReqArg (\arg opt -> return opt {sumFunc = basewiseDistance arg}) "CSV") "Output CSV with sitewise distances (implies -a)",
             Option ['j'] ["json"] (NoArg (\opt -> return opt {sumFunc = jsonDistance})) "Output all distances to JSON format",
-            Option ['f'] ["force"] (NoArg (\opt -> return opt {compareFunc=unsafeCompare})) "Force comparsion of possibly incompatible alignments"
+            Option ['f'] ["force"] (NoArg (\opt -> return opt {compareFunc=unsafeCompare})) "Force comparsion of possibly incompatible alignments",
+            Option [] ["seqorder"] (NoArg (\opt -> return opt {preprocFunc = sortAlignmentBySeq})) "Reorder non-overlapping columns on alignments sorted by sequence content, not name",
+            Option [] ["nameorder"] (NoArg (\opt -> return opt {preprocFunc = sortAlignment})) "Reorder non-overlapping columns on alignments sorted by name, not sequence content (default)"
           ]
 
 safeCompare :: (ListAlignment -> ListAlignment -> [[(Int,Int)]]) -> ListAlignment -> ListAlignment -> Either String [[(Int,Int)]]
