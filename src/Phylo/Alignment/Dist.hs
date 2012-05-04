@@ -64,7 +64,7 @@ instance SiteLabel Int where
   isGap a = a<0
 
 
-instance (Integral a, Eq b, Show b,Ord a) => SiteLabel (a,b) where
+instance (Integral a, Show a, Eq b, Show b,Ord a) => SiteLabel (a,b) where
   isGap (a,b) = a<0
 
 totalDistList = summariseDistList . map summariseDistList
