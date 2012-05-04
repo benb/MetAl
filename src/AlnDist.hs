@@ -31,6 +31,7 @@ import Text.JSON
 import Debug.Trace
 
 data Options = Options  { optVersion    :: Bool
+                        , ignoreNames   :: Bool
                         , preprocFunc      :: ListAlignment -> ListAlignment
                         , optFunc       :: ListAlignment -> ListAlignment -> [[(Int,Int)]]
                         , sumFunc       :: ListAlignment -> ListAlignment -> Either String [[(Int,Int)]] -> IO ()
@@ -51,6 +52,7 @@ options = [ Option ['p'] ["pos"] (NoArg (\opt-> return opt {optFunc = homGapDist
             Option ['c'] ["all-sites"] (ReqArg (\arg opt -> return opt {sumFunc = basewiseDistance arg}) "CSV") "Output CSV with sitewise distances (implies -a)",
             Option ['j'] ["json"] (NoArg (\opt -> return opt {sumFunc = jsonDistance})) "Output all distances to JSON format",
             Option ['f'] ["force"] (NoArg (\opt -> return opt {compareFunc=unsafeCompare})) "Force comparsion of possibly incompatible alignments",
+            Option [] ["ignore-names"] (NoArg (\opt -> return opt {ignoreNames = True})) "Ignore the names in the alignment files (rely on order in file)",
             Option [] ["seqorder"] (NoArg (\opt -> return opt {preprocFunc = sortAlignmentBySeq})) "Reorder non-overlapping columns on alignments sorted by sequence content, not name",
             Option [] ["nameorder"] (NoArg (\opt -> return opt {preprocFunc = sortAlignment})) "Reorder non-overlapping columns on alignments sorted by name, not sequence content (default)"
           ]
@@ -65,13 +67,14 @@ unsafeCompare dist aln1 aln2 = case (filter (\(Incompat (fatal,err)) -> fatal ) 
 
 
 safeTreeCompare dist tree aln1 aln2 = case (compatible tree aln1) of
-                                        False -> error "Tree is incompatible with first alignment"
-                                        True -> case (compatible tree aln2) of 
+                                          False -> error "Tree is incompatible with first alignment"
+                                          True -> case (compatible tree aln2) of 
                                                 False -> error "Tree is incompatible with second alignment"
                                                 True -> (dist tree) aln1 aln2
 
 
 startOptions = Options {optVersion = False,
+                        ignoreNames = False,
                         optFunc = homGapDist,
                         preprocFunc = sortAlignment,
                         sumFunc = summariseDistance,
@@ -125,13 +128,18 @@ jsonDistance first second out = case out of
 dumpCSV seqNames list handle = hPutStrLn handle $ unlines $ map (\(name,l2)->name ++ "," ++ intercalate "," (reverse $ map toStr l2)) $ zip seqNames (reverse list)
                                 where toStr (i,j) = show ((fromIntegral j)/(fromIntegral i))
 
+reassignNames ((ListAlignment names seqs cols):(ListAlignment _ seqs' cols'):xs) | (length seqs) == (length seqs')  = (ListAlignment names seqs cols):(ListAlignment names seqs' cols'):xs 
+                                                                                 | otherwise = error $ "ERROR: alignment files have " ++ (show $ length seqs) ++ " and " ++ (show $ length seqs') ++ " sequences, respectively"
+
 main = do args <- getArgs
           let (actions, nonOptions, errors)=getOpt Permute options args
           opts <- foldl (>>=) (return startOptions) actions
-          let Options {optFunc = optF, sumFunc = sF, compareFunc = cF, preprocFunc = pp} = opts
+          let Options {optFunc = optF, ignoreNames = iG, sumFunc = sF, compareFunc = cF, preprocFunc = pp} = opts
           let f = cF optF
           alignments' <- mapM readAln nonOptions
-          let alignments = map pp alignments'
+          let alignments = case iG of 
+                                False -> map pp alignments'
+                                True -> map pp $ reassignNames alignments'
           me <- getProgName
           let preamble = unlines ["MetAl 1.0.3: Metrics for Multiple Sequence Alignments.",
                                   "Usage: metal <options> alignment1 alignment2",
