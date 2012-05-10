@@ -30,8 +30,8 @@ task :package do |t|
 
         version = File.open("dist.cabal").grep(/^Version/)[0].split(" ")[1]
         puts CONFIG['host_os'] + " " + CONFIG['host_cpu']
-        if (CONFIG['host_os']=="linux")
-                if (CONFIG['host_cpu']=="amd64")
+        if (CONFIG['host_os'].start_with? "linux")
+                if (CONFIG['host_cpu']=="amd64" || CONFIG['host_cpu']=="x86_64")
                         sh "cabal clean && cabal configure --ghc-options='-static -optl-static -optl-pthread ' && cabal build"
                         target = "metal-linux64-#{version}"
                         deploy(target)
