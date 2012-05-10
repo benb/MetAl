@@ -141,7 +141,7 @@ main = do args <- getArgs
                                 False -> map pp alignments'
                                 True -> map pp $ reassignNames alignments'
           me <- getProgName
-          let preamble = unlines ["MetAl 1.0.3: Metrics for Multiple Sequence Alignments.",
+          let preamble = unlines ["MetAl 1.1.0: Metrics for Multiple Sequence Alignments.",
                                   "Usage: metal <options> alignment1 alignment2",
                                   "This is free software, see COPYING for details",
                                   "Options:"]

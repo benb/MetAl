@@ -13,8 +13,11 @@ task :package do |t|
 			cp binfile, File.join(target,"/metal.exe")
 		else
 			binfile=bindir+"metal"
+                        sh "strip #{binfile}"
 			cp binfile, File.join(target,"/metal")
+                        sh "chmod +x #{File.join(target,"/metal")}"
 		end
+                cp_r Pathname.getwd + "example", target
         end
 	def deploy(target)
 		deploy_raw target
@@ -29,25 +32,25 @@ task :package do |t|
         puts CONFIG['host_os'] + " " + CONFIG['host_cpu']
         if (CONFIG['host_os']=="linux")
                 if (CONFIG['host_cpu']=="amd64")
-                        sh "cabal clean && cabal configure --ghc-options='-static -optl-static -optl-pthread -O2' && cabal build"
+                        sh "cabal clean && cabal configure --ghc-options='-static -optl-static -optl-pthread ' && cabal build"
                         target = "metal-linux64-#{version}"
                         deploy(target)
                end
                if (CONFIG['host_cpu']=~/i.86/)
-                       sh "cabal clean && cabal configure --ghc-options='-static -optl-static -optl-pthread -O2' && cabal build"
+                       sh "cabal clean && cabal configure --ghc-options='-static -optl-static -optl-pthread ' && cabal build"
                         target = "metal-linux32-#{version}"
                         deploy(target)
                end
         end
 
         if (CONFIG['host_os']=~/darwin/)
-                        sh "cabal clean && cabal configure --ghc-options='-O2' && cabal build "
+                        sh "cabal clean && cabal configure --ghc-options='-fllvm' && cabal build "
                         target = "metal-mac-#{version}"
                         deploy(target)
         end
         if (CONFIG['host_os']=~/w32/)
                         sh "cabal clean"
-			sh "cabal configure --ghc-option=-O2"
+			sh "cabal configure"
 			sh "cabal build"
                         target = "metal-win-#{version}"
 			deploy_7z(target)
