@@ -38,7 +38,7 @@ the `example` directory.
 How different are alignments from ClustalW and Prank, using metric d-pos?
 
     $ metal example/BB12036.prank-fas example/BB12036.clustalw-fas
-    2636 / 17604 = 0.14973869575096568`
+    2636 / 17604 = 0.14973869575096568
 
 So The ClustalW and Prank alignments are ~15% different.
 
@@ -52,7 +52,7 @@ How do different sequences contribute to the distance?
     2ak2_ 472 / 2640 = 0.1787878787878788
     2ak3_A 480 / 2712 = 0.17699115044247787
     3adk_ 390 / 2328 = 0.16752577319587628
-    3286 / 17604 = 0.18666212224494433`
+    3286 / 17604 = 0.18666212224494433
 
 Clearly, `1zak_A` has the greatest discrepency between the two aligners.
 
@@ -82,7 +82,7 @@ like so:
     example/BB12036.dialigntx-fas 2044 / 17604 = 0.11610997500568053
     example/BB12036.fftnsi-fas 2096 / 17604 = 0.11906384912519882
     example/BB12036.clustalw-fas 2636 / 17604 = 0.14973869575096568
-    example/BB12036.prank-fas 3448 / 17604 = 0.1958645762326744`
+    example/BB12036.prank-fas 3448 / 17604 = 0.1958645762326744
     
 MAFFT's L-INS-i algorithm is closest, Prank is furthest. Note that although
 both Prank and ClustalW are 15-20% different to the reference alignment, this
