@@ -17,7 +17,7 @@
 
 -}
 module Phylo.Alignment.Test where
-import Test.QuickCheck
+import Test.QuickCheck as QC
 import Data.List
 import Phylo.Alignment
 import qualified Phylo.Alignment.Dist as DF
@@ -28,15 +28,15 @@ import Text.Printf
 
 main  = mapM_ (\(s,a) -> printf "%-25s: " s >> a) alltests 
 
---deepCheck = quickCheckWith (stdArgs { maxSuccess = 1000})
+--deepCheck = QC.quickCheckWith (stdArgs { maxSuccess = 1000})
 
 
-alltests = [("sort",quickCheck prop_sortaln),
-            ("nonneg",quickCheck prop_nonneg),
-            ("discriminant",quickCheck prop_disc),
-            ("symmetric",quickCheck prop_sym),
-            ("triangle ineq",quickCheck prop_trig),
-            ("same as sets",quickCheck prop_sets)]
+alltests = [("sort",QC.quickCheck prop_sortaln),
+            ("nonneg",QC.quickCheck prop_nonneg),
+            ("discriminant",QC.quickCheck prop_disc),
+            ("symmetric",QC.quickCheck prop_sym),
+            ("triangle ineq",QC.quickCheck prop_trig),
+            ("same as sets",QC.quickCheck prop_sets)]
 
 
 toDist :: (Int,Int) -> Double
@@ -78,23 +78,23 @@ getSeq (UngappedSequence x) = map getSeqChar x
 
 data SeqChar = SeqChar Char deriving Show
 getSeqChar (SeqChar x) = x
-instance Arbitrary SeqChar where
+instance QC.Arbitrary SeqChar where
         arbitrary = liftM SeqChar $ elements ['A'..'Z']
 
-instance Arbitrary UngappedSequence where
+instance QC.Arbitrary UngappedSequence where
         arbitrary = do x <- listOf1 (arbitrary :: Gen SeqChar)
                        return $ UngappedSequence x
 
 data AlignmentPair = AlignmentPair ListAlignment ListAlignment deriving Show
 data AlignmentTriple = AlignmentTriple ListAlignment ListAlignment ListAlignment deriving Show
        
-instance Arbitrary AlignmentPair where
+instance QC.Arbitrary AlignmentPair where
         arbitrary = do unalignedSeqs <- liftM (map getSeq) $ (liftM2 (++)) (listOf1 (arbitrary :: Gen UngappedSequence)) (listOf1 (arbitrary :: Gen UngappedSequence))
                        finalLen <- do x<-(arbitrary :: Gen Int)
                                       let ungaplen = (maximum $ map length unalignedSeqs)
                                       return $ ((abs x) `mod` ungaplen) + ungaplen 
-                       shuffled1 <- liftM (reapplySeq unalignedSeqs) $ mapM shuffle $ pad unalignedSeqs finalLen
-                       shuffled2 <- liftM (reapplySeq unalignedSeqs) $ mapM shuffle $ pad unalignedSeqs finalLen
+                       shuffled1 <- liftM (reapplySeq unalignedSeqs) $ mapM shuff $ pad unalignedSeqs finalLen
+                       shuffled2 <- liftM (reapplySeq unalignedSeqs) $ mapM shuff $ pad unalignedSeqs finalLen
                        return $ AlignmentPair (safeListAlignment (names shuffled1) shuffled1) (safeListAlignment (names shuffled2) shuffled2) where
                        pad [] i = []
                        pad (x:xs) i = (x ++ (take (i-(length x)) $ repeat '-')):(pad xs i)
@@ -108,19 +108,19 @@ reapplySeq' (x:xs) (y:ys)
 reapplySeq' [] (y:ys) = y:ys
 reapplySeq' [] [] = [] 
 
-shuffle :: (Eq a) => [a] -> Gen [a]
-shuffle [] = return []
-shuffle xs = do x  <- oneof $ map return xs
-                ys <- shuffle $ delete x xs
-                return (x:ys)
+shuff :: (Eq a) => [a] -> Gen [a]
+shuff [] = return []
+shuff xs = do x  <- oneof $ map return xs
+              ys <- shuff $ delete x xs
+              return (x:ys)
 
-instance Arbitrary AlignmentTriple where
+instance QC.Arbitrary AlignmentTriple where
         arbitrary = do unalignedSeqs <- liftM (map getSeq) $ (liftM2 (++)) (listOf1 (arbitrary :: Gen UngappedSequence)) (listOf1 (arbitrary :: Gen UngappedSequence))
                        finalLen <- do x<-(arbitrary :: Gen Int)
                                       return $ ((abs x) `mod` 10) + (maximum $ map length unalignedSeqs)
-                       shuffled1 <- liftM (reapplySeq unalignedSeqs) $ mapM shuffle $ pad unalignedSeqs finalLen
-                       shuffled2 <- liftM (reapplySeq unalignedSeqs) $ mapM shuffle $ pad unalignedSeqs finalLen
-                       shuffled3 <- liftM (reapplySeq unalignedSeqs) $ mapM shuffle $ pad unalignedSeqs finalLen
+                       shuffled1 <- liftM (reapplySeq unalignedSeqs) $ mapM shuff $ pad unalignedSeqs finalLen
+                       shuffled2 <- liftM (reapplySeq unalignedSeqs) $ mapM shuff $ pad unalignedSeqs finalLen
+                       shuffled3 <- liftM (reapplySeq unalignedSeqs) $ mapM shuff $ pad unalignedSeqs finalLen
                        return $ AlignmentTriple (safeListAlignment (names shuffled1) shuffled1) (safeListAlignment (names shuffled2) shuffled2) (safeListAlignment (names shuffled3) shuffled3) where
                        pad [] i = []
                        pad (x:xs) i = (x ++ (take (i-(length x)) $ repeat '-')):(pad xs i)
